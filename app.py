@@ -1,36 +1,35 @@
 from flask import Flask, render_template, request, redirect, session
-import sqlite3
 import os
+import psycopg2
+from psycopg2 import errors
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "seven_store_versao_06")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-BANCO = os.path.join(BASE_DIR, "banco.db")
-
 
 def conectar_banco():
-    banco = sqlite3.connect(BANCO, timeout=10)
-    banco.row_factory = sqlite3.Row
-    criar_tabelas(banco)
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL não configurada no Render.")
+    banco = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
     return banco
 
 
-def criar_tabelas(banco):
-    banco.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario TEXT UNIQUE NOT NULL,
-            senha TEXT NOT NULL
-        )
-    """)
-    banco.commit()
-
-
 def criar_banco():
-    banco = sqlite3.connect(BANCO, timeout=10)
-    criar_tabelas(banco)
-    banco.close()
+    banco = conectar_banco()
+    try:
+        with banco.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS usuarios (
+                    id SERIAL PRIMARY KEY,
+                    usuario VARCHAR(100) UNIQUE NOT NULL,
+                    senha VARCHAR(255) NOT NULL
+                )
+            """)
+        banco.commit()
+    finally:
+        banco.close()
 
 
 criar_banco()
@@ -53,10 +52,12 @@ def fazer_login():
 
     banco = conectar_banco()
     try:
-        resultado = banco.execute(
-            "SELECT * FROM usuarios WHERE usuario = ? AND senha = ?",
-            (usuario, senha)
-        ).fetchone()
+        with banco.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM usuarios WHERE usuario = %s AND senha = %s",
+                (usuario, senha)
+            )
+            resultado = cursor.fetchone()
     finally:
         banco.close()
 
@@ -82,12 +83,14 @@ def cadastrar():
 
     banco = conectar_banco()
     try:
-        banco.execute(
-            "INSERT INTO usuarios (usuario, senha) VALUES (?, ?)",
-            (usuario, senha)
-        )
+        with banco.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO usuarios (usuario, senha) VALUES (%s, %s)",
+                (usuario, senha)
+            )
         banco.commit()
-    except sqlite3.IntegrityError:
+    except errors.UniqueViolation:
+        banco.rollback()
         return render_template("cadastro.html", erro="Esse usuário já existe.")
     finally:
         banco.close()
@@ -150,8 +153,4 @@ def sair():
 
 
 if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000)),
-        debug=False
-    )
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
