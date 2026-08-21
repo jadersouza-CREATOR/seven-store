@@ -5,7 +5,7 @@
 <title>Seven Store — Dashboard</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body><div class="dashboard">
-<aside class="menu"><div class="logo-menu"><img src="{{ url_for('static', filename='seven-store-logo.jpg') }}" alt="Seven Store" style="width:150px;display:block;margin:0 auto 8px"><div class="versao">v0.6</div></div>
+<aside class="menu"><div class="logo-menu"><img class="logo-seven-store" src="{{ url_for('static', filename='seven-store-logo.svg') }}" alt="Seven Store"><div class="versao">v0.6</div></div>
 <nav><a class="ativo" href="{{ url_for('inicio') }}">▦ Dashboard</a><a href="{{ url_for('vendas') }}">🛒 PDV / Vendas</a><a href="{{ url_for('caixa') }}">💰 Meu Caixa</a>{% if perfil in ['administrador','subadministrador'] %}<a href="{{ url_for('produtos') }}">📦 Produtos</a><a href="{{ url_for('clientes') }}">👥 Clientes</a><a href="{{ url_for('estoque') }}">▤ Estoque</a><a href="{{ url_for('relatorios') }}">▥ Relatórios</a><a href="{{ url_for('atendimento') }}">💬 Atendimento</a>{% endif %}{% if perfil == 'administrador' %}<a href="{{ url_for('configuracoes') }}">⚙ Configurações</a>{% endif %}</nav>
 <div class="menu-final"><a href="{{ url_for('sair') }}">↪ Sair do sistema</a></div></aside>
 <main class="conteudo"><header class="cabecalho"><div><h2>Dashboard</h2><p>Visão geral da sua loja</p></div><div class="usuario-dashboard">👤 {{ usuario }} · {{ perfil_nome }}</div></header>
