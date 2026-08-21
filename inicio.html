@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Seven Store - Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <aside class="menu">
+
+        <div class="logo-menu">
+            <h1>SEVEN</h1>
+            <span>STORE</span>
+        </div>
+
+        <nav>
+
+            <a href="/inicio" class="ativo">
+                🏠 Dashboard
+            </a>
+
+            <a href="#">
+                📦 Produtos
+            </a>
+
+            <a href="#">
+                👥 Clientes
+            </a>
+
+            <a href="#">
+                🛒 Vendas
+            </a>
+
+            <a href="#">
+                📋 Estoque
+            </a>
+
+            <a href="#">
+                📊 Relatórios
+            </a>
+
+            <a href="#">
+                💰 Caixa
+            </a>
+
+        </nav>
+
+        <div class="menu-final">
+
+            <a href="#">
+                ⚙️ Configurações
+            </a>
+
+            <a href="/sair">
+                🚪 Sair
+            </a>
+
+        </div>
+
+    </aside>
+
+
+    <main class="conteudo">
+
+        <header class="cabecalho">
+
+            <div>
+                <h2>Dashboard</h2>
+                <p>Visão geral do seu negócio</p>
+            </div>
+
+            <div class="usuario-dashboard">
+                👤 {{ usuario }}
+            </div>
+
+        </header>
+
+
+        <section class="cards-dashboard">
+
+            <div class="card-dashboard">
+
+                <div class="icone">
+                    💰
+                </div>
+
+                <div>
+                    <p>Vendas hoje</p>
+                    <h3>R$ 0,00</h3>
+                </div>
+
+            </div>
+
+
+            <div class="card-dashboard">
+
+                <div class="icone">
+                    🛒
+                </div>
+
+                <div>
+                    <p>Vendas realizadas</p>
+                    <h3>0</h3>
+                </div>
+
+            </div>
+
+
+            <div class="card-dashboard">
+
+                <div class="icone">
+                    📦
+                </div>
+
+                <div>
+                    <p>Produtos cadastrados</p>
+                    <h3>0</h3>
+                </div>
+
+            </div>
+
+
+            <div class="card-dashboard">
+
+                <div class="icone">
+                    👥
+                </div>
+
+                <div>
+                    <p>Clientes</p>
+                    <h3>0</h3>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section class="painel">
+
+            <div class="painel-header">
+
+                <div>
+                    <h3>Resumo das vendas</h3>
+                    <p>Acompanhe suas vendas recentes</p>
+                </div>
+
+            </div>
+
+            <div class="vazio">
+
+                <div class="vazio-icone">
+                    📊
+                </div>
+
+                <h3>Nenhuma venda registrada</h3>
+
+                <p>
+                    Quando você realizar uma venda,
+                    ela aparecerá aqui.
+                </p>
+
+                <a href="#" class="botao">
+                    + Nova venda
+                </a>
+
+            </div>
+
+        </section>
+
+
+        <section class="atalhos">
+
+            <h3>Acesso rápido</h3>
+
+            <div class="atalhos-grid">
+
+                <a href="#" class="atalho">
+                    <span>📦</span>
+                    <strong>Novo produto</strong>
+                    <small>Cadastrar produto</small>
+                </a>
+
+                <a href="#" class="atalho">
+                    <span>👤</span>
+                    <strong>Novo cliente</strong>
+                    <small>Cadastrar cliente</small>
+                </a>
+
+                <a href="#" class="atalho">
+                    <span>🛒</span>
+                    <strong>Nova venda</strong>
+                    <small>Registrar venda</small>
+                </a>
+
+                <a href="#" class="atalho">
+                    <span>📊</span>
+                    <strong>Relatórios</strong>
+                    <small>Ver resultados</small>
+                </a>
+
+            </div>
+
+        </section>
+
+
+        <footer>
+
+            Seven Store © 2026
+            <span>• Sistema de Venda v0.5</span>
+
+        </footer>
+
+    </main>
+
+</div>
+
+</body>
+
+</html
