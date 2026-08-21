@@ -34,11 +34,7 @@ def instalar(mod):
         access = token()
         if not access:
             raise RuntimeError('MERCADOPAGO_ACCESS_TOKEN não configurado no Render.')
-        req = Request(
-            f'https://api.mercadopago.com/v1/payments/{payment_id}',
-            headers={'Authorization': 'Bearer ' + access, 'Content-Type': 'application/json'},
-            method='GET'
-        )
+        req = Request(f'https://api.mercadopago.com/v1/payments/{payment_id}', headers={'Authorization': 'Bearer ' + access, 'Content-Type': 'application/json'}, method='GET')
         with urlopen(req, timeout=20) as response:
             return json.loads(response.read().decode('utf-8'))
 
@@ -57,16 +53,7 @@ def instalar(mod):
             'external_reference': str(venda_id),
             'notification_url': base_url() + '/webhook/pix'
         }
-        req = Request(
-            'https://api.mercadopago.com/v1/payments',
-            data=json.dumps(body).encode('utf-8'),
-            headers={
-                'Authorization': 'Bearer ' + access,
-                'Content-Type': 'application/json',
-                'X-Idempotency-Key': str(uuid.uuid4())
-            },
-            method='POST'
-        )
+        req = Request('https://api.mercadopago.com/v1/payments', data=json.dumps(body).encode('utf-8'), headers={'Authorization': 'Bearer ' + access, 'Content-Type': 'application/json', 'X-Idempotency-Key': str(uuid.uuid4())}, method='POST')
         try:
             with urlopen(req, timeout=25) as response:
                 return json.loads(response.read().decode('utf-8'))
@@ -74,32 +61,7 @@ def instalar(mod):
             detalhe = e.read().decode('utf-8', errors='replace')
             raise RuntimeError('Mercado Pago recusou a cobrança: ' + detalhe[:500])
 
-    def salvar_pendente(venda_id, pagamento):
-        data = pagamento.get('point_of_interaction', {}).get('transaction_data', {})
-        qr = data.get('qr_code') or ''
-        qr64 = data.get('qr_code_base64') or ''
-        banco = mod.conectar_banco()
-        try:
-            with banco.cursor() as cursor:
-                cursor.execute(
-                    "UPDATE vendas SET pagamento_id=%s,pagamento_status=%s,pix_qr_code=%s,pix_copia_cola=%s,status='pendente' WHERE id=%s",
-                    (str(pagamento.get('id')), pagamento.get('status', 'pending'), qr64, qr, venda_id)
-                )
-            banco.commit()
-        finally:
-            banco.close()
-        return qr, qr64
-
-    def criar_pix():
-        if not mod.exigir_login():
-            return jsonify({'erro': 'Faça login.'}), 401
-        try:
-            total = Decimal(str(request.get_json(silent=True).get('total', '0')).replace(',', '.'))
-        except Exception:
-            total = Decimal('0')
-        descricao = (request.get_json(silent=True) or {}).get('descricao', '')
-        if total <= 0:
-            return jsonify({'erro': 'Informe um valor válido.'}), 400
+    def criar_cobranca(total, descricao):
         uid = mod.usuario_id_atual()
         caixa = mod.garantir_caixa(uid)
         banco = mod.conectar_banco()
@@ -109,29 +71,43 @@ def instalar(mod):
                 existente = cursor.fetchone()
                 if existente:
                     venda_id = existente['id']
-                    cursor.execute("SELECT pagamento_id,pix_qr_code,pix_copia_cola FROM vendas WHERE id=%s", (venda_id,))
-                    p = cursor.fetchone()
-                    session['pix_venda_id'] = venda_id
-                    return jsonify({'venda_id': venda_id, 'payment_id': p['pagamento_id'], 'qr_code': p['pix_copia_cola'], 'qr_code_base64': p['pix_qr_code'], 'status': 'pending'})
+                    cursor.execute("SELECT pagamento_id,pix_qr_code,pix_copia_cola,pagamento_status FROM vendas WHERE id=%s", (venda_id,))
+                    return venda_id, cursor.fetchone()
                 cursor.execute("INSERT INTO vendas (usuario_id,caixa_id,total,pagamento,descricao,status,pagamento_status) VALUES (%s,%s,%s,'pix',%s,'pendente','pending') RETURNING id", (uid, caixa['id'], total, descricao))
                 venda_id = cursor.fetchone()['id']
             banco.commit()
         finally:
             banco.close()
+        pagamento = criar_pagamento(venda_id, total, descricao)
+        data = pagamento.get('point_of_interaction', {}).get('transaction_data', {})
+        qr = data.get('qr_code') or ''
+        qr64 = data.get('qr_code_base64') or ''
+        banco = mod.conectar_banco()
         try:
-            pagamento = criar_pagamento(venda_id, total, descricao)
-            qr, qr64 = salvar_pendente(venda_id, pagamento)
+            with banco.cursor() as cursor:
+                cursor.execute("UPDATE vendas SET pagamento_id=%s,pagamento_status=%s,pix_qr_code=%s,pix_copia_cola=%s,status='pendente' WHERE id=%s", (str(pagamento.get('id')), pagamento.get('status', 'pending'), qr64, qr, venda_id))
+            banco.commit()
+        finally:
+            banco.close()
+        return venda_id, {'pagamento_id': str(pagamento.get('id')), 'pix_qr_code': qr64, 'pix_copia_cola': qr, 'pagamento_status': pagamento.get('status', 'pending')}
+
+    def criar_pix():
+        if not mod.exigir_login():
+            return jsonify({'erro': 'Faça login.'}), 401
+        dados = request.get_json(silent=True) or {}
+        try:
+            total = Decimal(str(dados.get('total', '0')).replace(',', '.'))
+        except Exception:
+            total = Decimal('0')
+        descricao = str(dados.get('descricao', '') or '')
+        if total <= 0:
+            return jsonify({'erro': 'Informe um valor válido.'}), 400
+        try:
+            venda_id, p = criar_cobranca(total, descricao)
         except Exception as e:
-            banco = mod.conectar_banco()
-            try:
-                with banco.cursor() as cursor:
-                    cursor.execute("UPDATE vendas SET pagamento_status='erro' WHERE id=%s", (venda_id,))
-                banco.commit()
-            finally:
-                banco.close()
-            return jsonify({'erro': str(e), 'venda_id': venda_id}), 400
+            return jsonify({'erro': str(e)}), 400
         session['pix_venda_id'] = venda_id
-        return jsonify({'venda_id': venda_id, 'payment_id': str(pagamento.get('id')), 'qr_code': qr, 'qr_code_base64': qr64, 'status': pagamento.get('status')})
+        return jsonify({'venda_id': venda_id, 'payment_id': p.get('pagamento_id'), 'qr_code': p.get('pix_copia_cola'), 'qr_code_base64': p.get('pix_qr_code'), 'status': p.get('pagamento_status', 'pending')})
 
     def status_pix(venda_id):
         if not mod.exigir_login():
@@ -190,16 +166,26 @@ def instalar(mod):
             return 'EVENT_RECEIVED', 200
         return 'EVENT_RECEIVED', 200
 
-    def pix_qr(venda_id=None):
+    def pix_qr():
         if not mod.exigir_login():
             return redirect('/')
-        venda_id = venda_id or session.get('pix_venda_id')
+        venda_id = session.get('pix_venda_id')
         if not venda_id:
-            return 'Crie uma cobrança Pix primeiro.', 400
+            try:
+                total = Decimal(str(request.args.get('valor', '0')).replace(',', '.'))
+            except Exception:
+                total = Decimal('0')
+            if total <= 0:
+                return 'Informe um valor válido.', 400
+            try:
+                venda_id, _ = criar_cobranca(total, request.args.get('descricao', 'Venda Seven Store'))
+                session['pix_venda_id'] = venda_id
+            except Exception as e:
+                return str(e), 400
         banco = mod.conectar_banco()
         try:
             with banco.cursor() as cursor:
-                cursor.execute("SELECT pix_qr_code FROM vendas WHERE id=%s AND usuario_id=%s", (venda_id, mod.usuario_id_atual()))
+                cursor.execute("SELECT pix_qr_code FROM vendas WHERE id=%s AND usuario_id=%s AND status='pendente'", (venda_id, mod.usuario_id_atual()))
                 venda = cursor.fetchone()
         finally:
             banco.close()
@@ -239,7 +225,50 @@ def instalar(mod):
         return original_vendas()
 
     app.view_functions['vendas'] = vendas_seguras
+    app.view_functions['pix_qr'] = pix_qr
     app.add_url_rule('/api/pix/criar', 'criar_pix', criar_pix, methods=['POST'])
     app.add_url_rule('/api/pix/status/<int:venda_id>', 'status_pix', status_pix, methods=['GET'])
     app.add_url_rule('/webhook/pix', 'webhook_pix', webhook_pix, methods=['POST','GET'])
-    app.add_url_rule('/pix/qr', 'pix_qr_mercadopago', pix_qr, methods=['GET'])
+
+    @app.after_request
+    def injetar_controle_pix(response):
+        if request.path != '/vendas' or 'text/html' not in response.content_type:
+            return response
+        html = response.get_data(as_text=True)
+        script = """
+<script>
+(function(){
+ const totalEl=document.getElementById('total'),pagEl=document.getElementById('pagamento'),qrEl=document.getElementById('qr'),copyEl=document.getElementById('pixCopia'),statusEl=document.getElementById('statusPix'),form=document.getElementById('vendaForm');
+ if(!totalEl||!pagEl||!form)return;
+ let vendaPixId=null;
+ function valor(){let v=(totalEl.value||'').trim().replace(/R\\$/g,'').replace(/\\s/g,'');if(v.includes(','))v=v.replace(/\\./g,'').replace(',','.');let n=Number(v);return Number.isFinite(n)&&n>0?n:0}
+ window.gerarQR=async function(){
+   if(pagEl.value!=='pix'){statusEl.textContent='Selecione Pix como forma de pagamento.';return}
+   const v=valor(); if(!v){statusEl.textContent='Informe um valor válido.';return}
+   statusEl.textContent='Criando cobrança Pix segura...';
+   try{
+     const r=await fetch('/api/pix/criar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({total:v.toFixed(2),descricao:form.querySelector('[name=descricao]').value||''})});
+     const d=await r.json(); if(!r.ok)throw new Error(d.erro||'Não foi possível criar a cobrança.');
+     vendaPixId=d.venda_id; if(qrEl)qrEl.src='/pix/qr?x='+Date.now(); if(copyEl)copyEl.value=d.qr_code||''; statusEl.textContent='🟡 Aguardando pagamento. O dinheiro ainda não foi confirmado.';
+   }catch(e){statusEl.textContent=e.message}
+ };
+ window.copiarPix=async function(){
+   if(!copyEl||!copyEl.value){statusEl.textContent='Gere o QR Code Pix primeiro.';return}
+   try{await navigator.clipboard.writeText(copyEl.value)}catch(e){copyEl.focus();copyEl.select();document.execCommand('copy')}
+   statusEl.textContent='Pix Copia e Cola copiado. A venda só será finalizada após confirmação do pagamento.';
+ };
+ form.addEventListener('submit',function(ev){
+   if(pagEl.value!=='pix')return;
+   ev.preventDefault();
+   if(!vendaPixId){statusEl.textContent='Gere o QR Code Pix antes de confirmar.';return}
+   statusEl.textContent='Verificando se o dinheiro caiu na conta...';
+   form.submit();
+ });
+ const qs=new URLSearchParams(location.search);if(qs.get('pix_ok')){alert(qs.get('pix_ok'));history.replaceState({},'',location.pathname)}if(qs.get('pix_erro')){if(statusEl)statusEl.textContent='❌ '+qs.get('pix_erro');history.replaceState({},'',location.pathname)}
+})();
+</script>
+"""
+        if '</body>' in html:
+            html = html.replace('</body>', script + '</body>')
+            response.set_data(html)
+        return response
