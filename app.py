@@ -99,11 +99,22 @@ def criar_banco():
                 )
             """)
             cursor.execute("INSERT INTO configuracoes_loja (id) VALUES (1) ON CONFLICT (id) DO NOTHING")
+
             cursor.execute("SELECT COUNT(*) AS total FROM usuarios")
             total = cursor.fetchone()["total"]
+
             if total == 0:
                 pass
-            cursor.execute("UPDATE usuarios SET perfil='administrador' WHERE perfil IS NULL OR perfil=''")
+            else:
+                cursor.execute("SELECT COUNT(*) AS total FROM usuarios WHERE perfil='administrador'")
+                administradores = cursor.fetchone()["total"]
+                if administradores == 0:
+                    cursor.execute("SELECT id FROM usuarios ORDER BY id ASC LIMIT 1")
+                    primeiro_usuario = cursor.fetchone()
+                    if primeiro_usuario:
+                        cursor.execute("UPDATE usuarios SET perfil='administrador' WHERE id=%s", (primeiro_usuario["id"],))
+
+            cursor.execute("UPDATE usuarios SET perfil='usuario' WHERE perfil IS NULL OR perfil=''")
         banco.commit()
     finally:
         banco.close()
