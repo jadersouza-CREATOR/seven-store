@@ -1,31 +1,11 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Seven Store - {{ titulo }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-<div class="dashboard">
-<aside class="menu">
-<div class="logo-menu"><h1>SEVEN</h1><span>STORE</span></div>
-<nav>
-<a href="{{ url_for('inicio') }}">🏠 Início</a>
-<a href="{{ url_for('produtos') }}">📦 Produtos</a>
-<a href="{{ url_for('clientes') }}">👥 Clientes</a>
-<a href="{{ url_for('vendas') }}">🛒 Vendas</a>
-<a href="{{ url_for('estoque') }}">📋 Estoque</a>
-<a href="{{ url_for('relatorios') }}">📊 Relatórios</a>
-<a href="{{ url_for('caixa') }}">💰 Caixa</a>
-</nav>
-<div class="menu-final"><a href="{{ url_for('sair') }}">🚪 Sair</a></div>
-</aside>
-<main class="conteudo">
-<header class="cabecalho"><div><h2>{{ titulo }}</h2><p>{{ descricao }}</p></div><div class="usuario-dashboard">👤 {{ usuario }}</div></header>
-<section class="painel"><div class="vazio"><div class="vazio-icone">🚧</div><h3>Área em desenvolvimento</h3><p>{{ descricao }}</p><a class="botao" href="{{ url_for('inicio') }}">Voltar ao início</a></div></section>
-<footer>Seven Store — Sistema de gerenciamento</footer>
-</main>
-</div>
-</body>
-</html>
+SEVENSTORE
+▦ Dashboard🛒 PDV / Vendas💰 Meu Caixa📦 Produtos👥 Clientes▤ Estoque▥ Relatórios💬 Atendimento{% if perfil=='administrador' %}⚙ Configurações{% endif %}
+↪ Sair
+{{titulo}}
+{{descricao}}
+
+👤 {{usuario}} · {{perfil_nome}}
+{{titulo}}
+{{descricao}}
+
+Voltar ao dashboard
