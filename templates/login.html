@@ -11,21 +11,17 @@
     <div class="logo">
         <h1>SEVEN STORE</h1>
         <p>Entre na sua conta</p>
-        <span>Versão 0.5.3</span>
+        <span>Versão 0.6</span>
     </div>
     <form action="/login" method="POST">
         <label for="usuario">Usuário</label>
         <input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário" autocomplete="username" required>
         <label for="senha">Senha</label>
         <input type="password" id="senha" name="senha" placeholder="Digite sua senha" autocomplete="current-password" required>
-        {% if erro %}
-            <div class="erro">{{ erro }}</div>
-        {% endif %}
+        {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
         <button type="submit">ENTRAR</button>
     </form>
-    <div class="cadastro-link">
-        <a href="/cadastro">Criar uma conta</a>
-    </div>
+    <div class="cadastro-link"><a href="/cadastro">Criar uma conta</a></div>
 </div>
 </body>
 </html>
