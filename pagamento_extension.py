@@ -171,17 +171,7 @@ def instalar(mod):
             return redirect('/')
         venda_id = session.get('pix_venda_id')
         if not venda_id:
-            try:
-                total = Decimal(str(request.args.get('valor', '0')).replace(',', '.'))
-            except Exception:
-                total = Decimal('0')
-            if total <= 0:
-                return 'Informe um valor válido.', 400
-            try:
-                venda_id, _ = criar_cobranca(total, request.args.get('descricao', 'Venda Seven Store'))
-                session['pix_venda_id'] = venda_id
-            except Exception as e:
-                return str(e), 400
+            return 'Nenhuma cobrança Pix ativa.', 400
         banco = mod.conectar_banco()
         try:
             with banco.cursor() as cursor:
