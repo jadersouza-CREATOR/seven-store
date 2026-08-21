@@ -1,11 +1,35 @@
-SEVENSTORE
-▦ Dashboard🛒 PDV / Vendas💰 Meu Caixa📦 Produtos👥 Clientes▤ Estoque▥ Relatórios💬 Atendimento{% if perfil=='administrador' %}⚙ Configurações{% endif %}
-↪ Sair
-{{titulo}}
-{{descricao}}
-
-👤 {{usuario}} · {{perfil_nome}}
-{{titulo}}
-{{descricao}}
-
-Voltar ao dashboard
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Seven Store — {{ titulo }}</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="dashboard">
+  <aside class="menu">
+    <div class="logo-menu"><img src="{{ url_for('static', filename='seven-store-logo.svg') }}" alt="Seven Store" style="width:150px;display:block;margin:0 auto 8px"><div class="versao">v0.6</div></div>
+    <nav>
+      <a href="{{ url_for('inicio') }}">▦ Dashboard</a>
+      <a href="{{ url_for('vendas') }}">🛒 PDV / Vendas</a>
+      <a href="{{ url_for('caixa') }}">💰 Meu Caixa</a>
+      {% if perfil in ['administrador','subadministrador'] %}
+      <a href="{{ url_for('produtos') }}">📦 Produtos</a><a href="{{ url_for('clientes') }}">👥 Clientes</a><a href="{{ url_for('estoque') }}">▤ Estoque</a><a href="{{ url_for('relatorios') }}">▥ Relatórios</a><a href="{{ url_for('atendimento') }}">💬 Atendimento</a>
+      {% endif %}
+      {% if perfil == 'administrador' %}<a href="{{ url_for('configuracoes') }}">⚙ Configurações</a>{% endif %}
+    </nav>
+    <div class="menu-final"><a href="{{ url_for('sair') }}">↪ Sair do sistema</a></div>
+  </aside>
+  <main class="conteudo">
+    <header class="cabecalho"><div><h2>{{ titulo }}</h2><p>{{ descricao }}</p></div><div class="usuario-dashboard">👤 {{ usuario }} · {{ perfil_nome }}</div></header>
+    <section class="card">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px"><img src="{{ url_for('static', filename='seven-store-logo.svg') }}" alt="Seven Store" style="width:90px;height:90px;border-radius:14px"><div><h3 style="font-size:22px;margin:0">Seven Store Boutique</h3><p style="color:#77736a;margin:6px 0 0">Área do sistema pronta para receber os dados desta seção.</p></div></div>
+      <a class="btn" href="{{ url_for('inicio') }}">Voltar ao dashboard</a>
+    </section>
+    {% if vendas is defined %}
+    <section class="card" style="margin-top:16px"><h3>Últimas movimentações</h3><div style="overflow:auto"><table class="table"><thead><tr><th>Data</th><th>Valor</th><th>Pagamento</th><th>Status</th><th>Descrição</th></tr></thead><tbody>{% for v in vendas %}<tr><td>{{ v.criada_em }}</td><td>R$ {{ '%.2f'|format(v.total) }}</td><td>{{ v.pagamento|upper }}</td><td>{% if v.status == 'cancelada' %}<span class="badge danger">Cancelada</span>{% else %}<span class="badge success">Concluída</span>{% endif %}</td><td>{{ v.descricao or '-' }}</td></tr>{% else %}<tr><td colspan="5">Nenhuma movimentação registrada.</td></tr>{% endfor %}</tbody></table></div></section>
+    {% endif %}
+    <footer>Seven Store — Sistema de gerenciamento · Boutique</footer>
+  </main>
+</div>
+</body>
+</html>
