@@ -10,13 +10,13 @@ BANCO = os.path.join(BASE_DIR, "banco.db")
 
 
 def conectar_banco():
-    banco = sqlite3.connect(BANCO)
+    banco = sqlite3.connect(BANCO, timeout=10)
     banco.row_factory = sqlite3.Row
+    criar_tabelas(banco)
     return banco
 
 
-def criar_banco():
-    banco = conectar_banco()
+def criar_tabelas(banco):
     banco.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,6 +25,11 @@ def criar_banco():
         )
     """)
     banco.commit()
+
+
+def criar_banco():
+    banco = sqlite3.connect(BANCO, timeout=10)
+    criar_tabelas(banco)
     banco.close()
 
 
@@ -47,11 +52,13 @@ def fazer_login():
         return render_template("login.html", erro="Preencha usuário e senha.")
 
     banco = conectar_banco()
-    resultado = banco.execute(
-        "SELECT * FROM usuarios WHERE usuario = ? AND senha = ?",
-        (usuario, senha)
-    ).fetchone()
-    banco.close()
+    try:
+        resultado = banco.execute(
+            "SELECT * FROM usuarios WHERE usuario = ? AND senha = ?",
+            (usuario, senha)
+        ).fetchone()
+    finally:
+        banco.close()
 
     if resultado:
         session["usuario"] = usuario
@@ -81,10 +88,10 @@ def cadastrar():
         )
         banco.commit()
     except sqlite3.IntegrityError:
-        banco.close()
         return render_template("cadastro.html", erro="Esse usuário já existe.")
+    finally:
+        banco.close()
 
-    banco.close()
     return redirect("/")
 
 
@@ -128,7 +135,12 @@ def caixa():
 def pagina_menu(titulo, descricao):
     if "usuario" not in session:
         return redirect("/")
-    return render_template("pagina.html", titulo=titulo, descricao=descricao, usuario=session["usuario"])
+    return render_template(
+        "pagina.html",
+        titulo=titulo,
+        descricao=descricao,
+        usuario=session["usuario"]
+    )
 
 
 @app.route("/sair")
@@ -138,4 +150,8 @@ def sair():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000)),
+        debug=False
+    )
