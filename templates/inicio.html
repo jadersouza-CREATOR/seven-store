@@ -1,57 +1,95 @@
-SEVENSTORE
-▦ Dashboard🛒 PDV / Vendas💰 Meu Caixa{% if perfil in ['administrador','subadministrador'] %}📦 Produtos👥 Clientes▤ Estoque▥ Relatórios💬 Atendimento{% endif %}{% if perfil=='administrador' %}⚙ Configurações{% endif %}
-↪ Sair
-Dashboard
-Visão geral da sua loja
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Seven Store — Dashboard</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="dashboard">
+  <aside class="menu">
+    <div class="logo-menu">
+      <img src="{{ url_for('static', filename='seven-store-logo.svg') }}" alt="Seven Store" style="width:150px;display:block;margin:0 auto 8px">
+      <div class="versao">v0.6</div>
+    </div>
+    <nav>
+      <a class="ativo" href="{{ url_for('inicio') }}">▦ Dashboard</a>
+      <a href="{{ url_for('vendas') }}">🛒 PDV / Vendas</a>
+      <a href="{{ url_for('caixa') }}">💰 Meu Caixa</a>
+      {% if perfil in ['administrador','subadministrador'] %}
+      <a href="{{ url_for('produtos') }}">📦 Produtos</a>
+      <a href="{{ url_for('clientes') }}">👥 Clientes</a>
+      <a href="{{ url_for('estoque') }}">▤ Estoque</a>
+      <a href="{{ url_for('relatorios') }}">▥ Relatórios</a>
+      <a href="{{ url_for('atendimento') }}">💬 Atendimento</a>
+      {% endif %}
+      {% if perfil == 'administrador' %}<a href="{{ url_for('configuracoes') }}">⚙ Configurações</a>{% endif %}
+    </nav>
+    <div class="menu-final"><a href="{{ url_for('sair') }}">↪ Sair do sistema</a></div>
+  </aside>
 
-👤 {{usuario}} · {{perfil_nome}}
-Vendas hoje
-R$ 5.842,90
-↑ 12,5% vs. ontem
-🛒
-Pedidos
-128
-↑ 8,2% esta semana
-🛍️
-Ticket médio
-R$ 45,65
-↑ 4,1% vs. ontem
-💳
-Estoque baixo
-7
-Requer atenção
-⚠️
-Vendas da semana
-{% for v in [55,72,62,82,94,100,40] %}
-{% endfor %}
-{% for d in ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'] %}
-{{d}}
-{% endfor %}
-Resumo do caixa
-Saldo atual
+  <main class="conteudo">
+    <header class="cabecalho">
+      <div><h2>Dashboard</h2><p>Visão geral da sua loja</p></div>
+      <div class="usuario-dashboard">👤 {{ usuario }} · {{ perfil_nome }}</div>
+    </header>
 
-R$ 8.420,50
-Vendas concluídas: 84
+    <section class="cards">
+      <div class="card"><div class="stat"><div><div class="label">Vendas hoje</div><div class="value">R$ 5.842,90</div><div class="up">↑ 12,5% vs. ontem</div></div><div class="icon">💰</div></div></div>
+      <div class="card"><div class="stat"><div><div class="label">Pedidos</div><div class="value">128</div><div class="up">↑ 8,2% esta semana</div></div><div class="icon">🛒</div></div></div>
+      <div class="card"><div class="stat"><div><div class="label">Ticket médio</div><div class="value">R$ 45,65</div><div class="up">↑ 4,1% vs. ontem</div></div><div class="icon">🛍️</div></div></div>
+      <div class="card"><div class="stat"><div><div class="label">Estoque baixo</div><div class="value">7</div><div style="color:#b7791f;font-size:11px;font-weight:700;margin-top:7px">⚠ Requer atenção</div></div><div class="icon">📦</div></div></div>
+    </section>
 
-Dinheiro: R$ 2.180,00
+    <section class="grid">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h3>Vendas da semana</h3><span class="badge info">Meta semanal</span></div>
+        <div style="height:210px;display:flex;align-items:flex-end;gap:12px;border-top:1px solid #eee9df;padding:18px 8px 0">
+          {% for v in [55,72,62,82,94,100,40] %}<div style="flex:1;height:100%;display:flex;align-items:flex-end"><div style="width:100%;height:{{ v }}%;min-height:20px;border-radius:8px 8px 2px 2px;background:linear-gradient(180deg,#efd36d,#b4861c)"></div></div>{% endfor %}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-top:8px;text-align:center;color:#8d887d;font-size:10px">{% for d in ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'] %}<span>{{ d }}</span>{% endfor %}</div>
+      </div>
 
-Pix: R$ 3.420,50
+      <div class="card">
+        <h3>Resumo do caixa</h3>
+        <div style="color:#77736a;font-size:12px">Saldo atual</div><div style="font-size:28px;font-weight:800;margin:5px 0 14px">R$ 8.420,50</div>
+        <div style="display:grid;gap:10px;font-size:12px">
+          <div style="display:flex;justify-content:space-between"><span>Vendas concluídas</span><strong>84</strong></div>
+          <div style="display:flex;justify-content:space-between"><span>Dinheiro</span><strong>R$ 2.180,00</strong></div>
+          <div style="display:flex;justify-content:space-between"><span>Pix</span><strong>R$ 3.420,50</strong></div>
+          <div style="display:flex;justify-content:space-between"><span>Cartões</span><strong>R$ 2.820,00</strong></div>
+        </div>
+        <a class="btn" style="display:inline-block;margin-top:18px" href="{{ url_for('caixa') }}">Abrir caixa</a>
+      </div>
+    </section>
 
-Cartões: R$ 2.820,00
+    <section class="grid" style="grid-template-columns:2fr 1fr">
+      <div class="card">
+        <h3>Vendas recentes</h3>
+        <div style="overflow:auto"><table class="table"><thead><tr><th>Venda</th><th>Cliente</th><th>Pagamento</th><th>Total</th><th>Status</th></tr></thead><tbody>
+          <tr><td>#4521</td><td>João Silva</td><td>Pix</td><td>R$ 284,90</td><td><span class="badge success">Concluída</span></td></tr>
+          <tr><td>#4520</td><td>Maria Santos</td><td>Cartão</td><td>R$ 156,40</td><td><span class="badge success">Concluída</span></td></tr>
+          <tr><td>#4519</td><td>Pedro Oliveira</td><td>Pix</td><td>R$ 98,70</td><td><span class="badge warning">Pendente</span></td></tr>
+          <tr><td>#4518</td><td>Ana Rodrigues</td><td>Dinheiro</td><td>R$ 72,50</td><td><span class="badge success">Concluída</span></td></tr>
+        </tbody></table></div>
+      </div>
+      <div class="card">
+        <h3>Alertas</h3>
+        <div style="display:grid;gap:11px;font-size:12px">
+          <div class="badge warning" style="display:block">Estoque baixo · Manteiga 200g</div>
+          <div class="badge info" style="display:block">Pix · Venda #4519 aguardando confirmação</div>
+          <div class="badge danger" style="display:block">Atenção · Solicitação de cancelamento</div>
+        </div>
+      </div>
+    </section>
 
-Abrir caixa
-Vendas recentes
-Venda	Cliente	Pagamento	Total	Status
-#4521	João Silva	Pix	R$ 284,90	Concluída
-#4520	Maria Santos	Cartão	R$ 156,40	Concluída
-#4519	Pedro Oliveira	Pix	R$ 98,70	Pendente
-#4518	Ana Rodrigues	Dinheiro	R$ 72,50	Concluída
-Alertas
-Estoque baixo Manteiga 200g
-
-Pix Venda #4519 aguardando confirmação
-
-Atenção Solicitação de cancelamento
-
-🛒 Nova vendaAbrir PDV📦 ProdutosGerenciar catálogo📊 RelatóriosVer desempenho💬 AtendimentoMensagens
-Seven Store — Sistema de gerenciamento
+    <section class="quick">
+      <a href="{{ url_for('vendas') }}">🛒 Nova venda<small>Abrir PDV</small></a>
+      {% if perfil in ['administrador','subadministrador'] %}<a href="{{ url_for('produtos') }}">📦 Produtos<small>Gerenciar catálogo</small></a>{% endif %}
+      {% if perfil in ['administrador','subadministrador'] %}<a href="{{ url_for('relatorios') }}">📊 Relatórios<small>Ver desempenho</small></a>{% endif %}
+      {% if perfil in ['administrador','subadministrador'] %}<a href="{{ url_for('atendimento') }}">💬 Atendimento<small>Mensagens</small></a>{% endif %}
+    </section>
+    <footer>Seven Store — Sistema de gerenciamento · Boutique</footer>
+  </main>
+</div>
+</body>
+</html>
