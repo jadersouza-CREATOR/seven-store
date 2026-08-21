@@ -1,67 +1,66 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Seven Store - Criar Conta</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
+    <title>Seven Store - Início</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+<body>
+<div class="dashboard">
+    <aside class="menu">
+        <div class="logo-menu">
+            <h1>SEVEN</h1>
+            <span>STORE</span>
+        </div>
+        <nav>
+            <a class="ativo" href="{{ url_for('inicio') }}">🏠 Início</a>
+            <a href="{{ url_for('produtos') }}">📦 Produtos</a>
+            <a href="{{ url_for('clientes') }}">👥 Clientes</a>
+            <a href="{{ url_for('vendas') }}">🛒 Vendas</a>
+            <a href="{{ url_for('estoque') }}">📋 Estoque</a>
+            <a href="{{ url_for('relatorios') }}">📊 Relatórios</a>
+            <a href="{{ url_for('caixa') }}">💰 Caixa</a>
+        </nav>
+        <div class="menu-final">
+            <a href="{{ url_for('sair') }}">🚪 Sair</a>
+        </div>
+    </aside>
 
-<body class="pagina-login">
-
-<div class="login-container">
-
-    <div class="logo">
-        <h1>SEVEN STORE</h1>
-        <p>Criar nova conta</p>
-        <span>Versão 0.5</span>
-    </div>
-
-    <form action="/cadastrar" method="POST">
-
-        <label for="usuario">Usuário</label>
-
-        <input
-            type="text"
-            id="usuario"
-            name="usuario"
-            placeholder="Crie seu usuário"
-            autocomplete="username"
-            required
-        >
-
-        <label for="senha">Senha</label>
-
-        <input
-            type="password"
-            id="senha"
-            name="senha"
-            placeholder="Crie sua senha"
-            autocomplete="new-password"
-            required
-        >
-
-        {% if erro %}
-            <div class="erro">
-                {{ erro }}
+    <main class="conteudo">
+        <header class="cabecalho">
+            <div>
+                <h2>Início</h2>
+                <p>Bem-vindo ao Seven Store!</p>
             </div>
-        {% endif %}
+            <div class="usuario-dashboard">👤 {{ usuario }}</div>
+        </header>
 
-        <button type="submit">
-            CRIAR CONTA
-        </button>
+        <section class="cards-dashboard">
+            <div class="card-dashboard"><div class="icone">📦</div><div><p>Produtos</p><h3>Gerenciar</h3></div></div>
+            <div class="card-dashboard"><div class="icone">👥</div><div><p>Clientes</p><h3>Gerenciar</h3></div></div>
+            <div class="card-dashboard"><div class="icone">🛒</div><div><p>Vendas</p><h3>Registrar</h3></div></div>
+            <div class="card-dashboard"><div class="icone">📋</div><div><p>Estoque</p><h3>Controlar</h3></div></div>
+        </section>
 
-    </form>
+        <section class="painel">
+            <h3>Bem-vindo, {{ usuario }}!</h3>
+            <p>Use o menu lateral para acessar as funções do Seven Store.</p>
+            <a class="botao" href="{{ url_for('produtos') }}">Começar</a>
+        </section>
 
-    <div class="cadastro-link">
-        <a href="/">← Voltar para o Login</a>
-    </div>
+        <section class="atalhos">
+            <h3>Acesso rápido</h3>
+            <div class="atalhos-grid">
+                <a class="atalho" href="{{ url_for('produtos') }}"><span>📦</span><strong>Produtos</strong><small>Gerenciar produtos</small></a>
+                <a class="atalho" href="{{ url_for('clientes') }}"><span>👥</span><strong>Clientes</strong><small>Gerenciar clientes</small></a>
+                <a class="atalho" href="{{ url_for('vendas') }}"><span>🛒</span><strong>Vendas</strong><small>Registrar vendas</small></a>
+                <a class="atalho" href="{{ url_for('relatorios') }}"><span>📊</span><strong>Relatórios</strong><small>Consultar dados</small></a>
+            </div>
+        </section>
 
+        <footer>Seven Store — Sistema de gerenciamento</footer>
+    </main>
 </div>
-
 </body>
 </html>
