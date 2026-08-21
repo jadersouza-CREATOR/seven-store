@@ -1,0 +1,94 @@
+name: Corrigir QR Code Pix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-pix:
+    if: ${{ !contains(github.event.head_commit.message, 'Corrigir QR Code Pix') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Corrigir gerador Pix
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          import unicodedata
+
+          p = Path('app.py')
+          text = p.read_text(encoding='utf-8')
+
+          novo = r'''def campo_pix(id_campo, valor):
+    valor = str(valor or '')
+    tamanho = len(valor.encode('utf-8'))
+    return f"{id_campo}{tamanho:02d}{valor}"
+
+
+def limpar_texto_pix(valor, limite, padrao):
+    valor = unicodedata.normalize('NFKD', str(valor or ''))
+    valor = ''.join(c for c in valor if not unicodedata.combining(c))
+    valor = ''.join(c for c in valor.upper() if c.isalnum() or c in ' .-')
+    valor = ' '.join(valor.split())
+    return (valor[:limite] or padrao)
+
+
+def gerar_payload_pix(chave, valor, nome, cidade):
+    chave = str(chave or '').strip()
+    if not chave:
+        raise ValueError('Chave Pix não cadastrada.')
+
+    nome = limpar_texto_pix(nome, 25, 'SEVEN STORE')
+    cidade = limpar_texto_pix(cidade, 15, 'BRASILIA')
+
+    merchant = campo_pix('00', 'br.gov.bcb.pix') + campo_pix('01', chave)
+    payload = campo_pix('00', '01')
+    payload += campo_pix('26', merchant)
+    payload += campo_pix('52', '0000')
+    payload += campo_pix('53', '986')
+
+    if valor:
+        valor_decimal = Decimal(str(valor).replace(',', '.'))
+        if valor_decimal <= 0:
+            raise ValueError('Valor Pix inválido.')
+        payload += campo_pix('54', f'{valor_decimal:.2f}')
+
+    payload += campo_pix('58', 'BR')
+    payload += campo_pix('59', nome)
+    payload += campo_pix('60', cidade)
+    payload += campo_pix('62', campo_pix('05', 'SEVENSTORE'))
+
+    base = payload + '6304'
+    crc = 0xFFFF
+    for byte in base.encode('utf-8'):
+        crc ^= byte << 8
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = ((crc << 1) ^ 0x1021) & 0xFFFF
+            else:
+                crc = (crc << 1) & 0xFFFF
+    return base + f'{crc:04X}'
+'''
+
+          padrao = re.compile(r'def campo_pix\(id_campo, valor\):.*?return base \+ f"\{crc:04X\}"\n', re.S)
+          if not padrao.search(text):
+              raise SystemExit('Função Pix não encontrada')
+          text = padrao.sub(novo, text, count=1)
+          text = text.replace('import os\n', 'import os\nimport unicodedata\n', 1) if 'import unicodedata\n' not in text else text
+          p.write_text(text, encoding='utf-8')
+
+      - name: Validar Python
+        run: python -m py_compile app.py
+
+      - name: Salvar correção
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py
+          git diff --cached --quiet || git commit -m "Corrigir QR Code Pix"
+          git push
