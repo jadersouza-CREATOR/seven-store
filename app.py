@@ -1,7 +1,5 @@
 from flask import Flask, render_template, request, redirect, session, jsonify, send_file
 import os
-import json
-import urllib.request
 import psycopg2
 from psycopg2 import errors
 from psycopg2.extras import RealDictCursor
@@ -59,7 +57,7 @@ def usuario_id_atual():
 def exigir_login(): return "usuario_id" in session
 
 def exigir_perfil(*perfis):
-    atual = usuario_atual(); return atual and atual["perfil"] in perfis
+    atual = usuario_atual(); return bool(atual and atual["perfil"] in perfis)
 
 def garantir_caixa(uid):
     banco = conectar_banco()
@@ -72,8 +70,8 @@ def garantir_caixa(uid):
     finally: banco.close()
 
 def contexto_base():
-    atual = usuario_atual()
-    return {"usuario": atual["usuario"] if atual else "", "perfil": atual["perfil"] if atual else "", "perfil_nome": {"administrador":"Administrador","subadministrador":"Sub-administrador","usuario":"Usuário"}.get(atual["perfil"] if atual else "","")}
+    atual = usuario_atual(); perfil = atual["perfil"] if atual else ""
+    return {"usuario": atual["usuario"] if atual else "", "perfil": perfil, "perfil_nome": {"administrador":"Administrador","subadministrador":"Sub-administrador","usuario":"Usuário"}.get(perfil,"")}
 
 @app.route("/")
 def login():
@@ -136,19 +134,17 @@ def relatorios():
 
 @app.route("/api/relatorios")
 def api_relatorios():
-    if not exigir_login() or not exigir_perfil("administrador","subadministrador"):
-        return jsonify({"erro":"Acesso negado"}),403
+    if not exigir_login() or not exigir_perfil("administrador","subadministrador"): return jsonify({"erro":"Acesso negado"}),403
     dias=request.args.get("dias",default=7,type=int)
     if dias not in (7,30,90): dias=7
-    agora=datetime.now(); inicio=agora-timedelta(days=dias)
-    banco=conectar_banco()
+    inicio=datetime.now()-timedelta(days=dias); banco=conectar_banco()
     try:
         with banco.cursor() as cursor:
             cursor.execute("SELECT COALESCE(SUM(total),0) AS total, COUNT(*) AS quantidade FROM vendas WHERE criada_em >= %s",(inicio,)); resumo=cursor.fetchone()
             cursor.execute("SELECT pagamento, COUNT(*) AS quantidade, COALESCE(SUM(total),0) AS total FROM vendas WHERE criada_em >= %s GROUP BY pagamento ORDER BY total DESC",(inicio,)); pagamentos=cursor.fetchall()
             cursor.execute("SELECT EXTRACT(HOUR FROM criada_em)::int AS hora, COUNT(*) AS quantidade, COALESCE(SUM(total),0) AS total FROM vendas WHERE criada_em >= %s GROUP BY hora ORDER BY hora",(inicio,)); horarios=cursor.fetchall()
-            cursor.execute("SELECT c.id, c.nome, COALESCE(u.usuario,'Sem usuário') AS usuario, COUNT(v.id) AS quantidade, COALESCE(SUM(v.total),0) AS total FROM caixas c LEFT JOIN usuarios u ON u.id=c.usuario_id LEFT JOIN vendas v ON v.caixa_id=c.id AND v.criada_em >= %s GROUP BY c.id,c.nome,u.usuario ORDER BY total DESC, quantidade DESC",(inicio,)); ranking=cursor.fetchall()
-            cursor.execute("SELECT TO_CHAR(criada_em,'DD/MM') AS dia, COUNT(*) AS quantidade, COALESCE(SUM(total),0) AS total FROM vendas WHERE criada_em >= %s GROUP BY DATE(criada_em),TO_CHAR(criada_em,'DD/MM') ORDER BY DATE(criada_em)",(inicio,)); por_dia=cursor.fetchall()
+            cursor.execute("SELECT c.id,c.nome,COALESCE(u.usuario,'Sem usuário') AS usuario,COUNT(v.id) AS quantidade,COALESCE(SUM(v.total),0) AS total FROM caixas c LEFT JOIN usuarios u ON u.id=c.usuario_id LEFT JOIN vendas v ON v.caixa_id=c.id AND v.criada_em >= %s GROUP BY c.id,c.nome,u.usuario ORDER BY total DESC,quantidade DESC",(inicio,)); ranking=cursor.fetchall()
+            cursor.execute("SELECT TO_CHAR(criada_em,'DD/MM') AS dia,COUNT(*) AS quantidade,COALESCE(SUM(total),0) AS total FROM vendas WHERE criada_em >= %s GROUP BY DATE(criada_em),TO_CHAR(criada_em,'DD/MM') ORDER BY DATE(criada_em)",(inicio,)); por_dia=cursor.fetchall()
     finally: banco.close()
     def clean(rows):
         out=[]
@@ -223,6 +219,34 @@ def gerar_payload_pix(chave,valor,nome,cidade):
         crc^=byte<<8
         for _ in range(8): crc=((crc<<1)^0x1021)&0xFFFF if crc&0x8000 else (crc<<1)&0xFFFF
     return base+f"{crc:04X}"
+
+@app.route("/configuracoes", methods=["GET","POST"])
+def configuracoes():
+    if not exigir_login(): return redirect("/")
+    if not exigir_perfil("administrador"): return redirect("/inicio")
+    mensagem=None
+    banco=conectar_banco()
+    try:
+        with banco.cursor() as cursor:
+            if request.method=="POST":
+                chave=request.form.get("pix_chave","").strip(); nome=request.form.get("pix_nome","").strip(); cidade=request.form.get("pix_cidade","").strip()
+                cursor.execute("UPDATE configuracoes_loja SET pix_chave=%s,pix_nome=%s,pix_cidade=%s,atualizado_em=CURRENT_TIMESTAMP WHERE id=1",(chave,nome,cidade)); banco.commit(); mensagem="Configurações salvas com sucesso."
+            cursor.execute("SELECT pix_chave,pix_nome,pix_cidade FROM configuracoes_loja WHERE id=1"); loja=cursor.fetchone() or {}
+            cursor.execute("SELECT id,usuario,perfil FROM usuarios ORDER BY id"); usuarios=cursor.fetchall()
+    finally: banco.close()
+    return render_template("configuracoes.html",**contexto_base(),loja=loja,usuarios=usuarios,mensagem=mensagem)
+
+@app.route("/configuracoes/perfil", methods=["POST"])
+def alterar_perfil():
+    if not exigir_login() or not exigir_perfil("administrador"): return redirect("/inicio")
+    uid=request.form.get("usuario_id",type=int); perfil=request.form.get("perfil","").strip()
+    if perfil not in ("administrador","subadministrador","usuario") or uid==usuario_id_atual() and perfil!="administrador": return redirect("/configuracoes")
+    banco=conectar_banco()
+    try:
+        with banco.cursor() as cursor: cursor.execute("UPDATE usuarios SET perfil=%s WHERE id=%s",(perfil,uid))
+        banco.commit()
+    finally: banco.close()
+    return redirect("/configuracoes")
 
 @app.route("/atendimento")
 def atendimento():
