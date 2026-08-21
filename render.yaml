@@ -3,7 +3,7 @@ services:
     name: seven-store
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
     envVars:
       - key: SECRET_KEY
         generateValue: true
@@ -11,6 +11,24 @@ services:
         fromDatabase:
           name: seven-store-db
           property: connectionString
+      - key: META_APP_ID
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
+      - key: META_VERIFY_TOKEN
+        sync: false
+      - key: META_REDIRECT_URI
+        value: https://seven-store.onrender.com/meta/callback
+      - key: META_GRAPH_VERSION
+        value: v23.0
+
+      # Opcional: usados pelos webhooks/envio legado se você ainda configurar tokens manualmente.
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: INSTAGRAM_ACCESS_TOKEN
+        sync: false
 
 databases:
   - name: seven-store-db
