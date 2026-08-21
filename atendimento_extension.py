@@ -57,6 +57,34 @@ def instalar(mod):
         except Exception: pass
         return redirect(url_for('atendimento', conversa=conversa_id))
 
+    def alterar_senha():
+        if not mod.exigir_login(): return redirect('/')
+        erro = None; sucesso = None
+        if request.method == 'POST':
+            atual = request.form.get('senha_atual', '')
+            nova = request.form.get('nova_senha', '')
+            confirmar = request.form.get('confirmar_senha', '')
+            if not atual or not nova or not confirmar:
+                erro = 'Preencha todos os campos.'
+            elif len(nova) < 4:
+                erro = 'A nova senha deve ter pelo menos 4 caracteres.'
+            elif nova != confirmar:
+                erro = 'A confirmação da senha não confere.'
+            else:
+                conexao = mod.conectar_banco()
+                try:
+                    with conexao.cursor() as cursor:
+                        cursor.execute('SELECT senha FROM usuarios WHERE id=%s', (mod.usuario_id_atual(),))
+                        conta = cursor.fetchone()
+                        if not conta or conta['senha'] != atual:
+                            erro = 'A senha atual está incorreta.'
+                        else:
+                            cursor.execute('UPDATE usuarios SET senha=%s WHERE id=%s', (nova, mod.usuario_id_atual()))
+                            conexao.commit()
+                            sucesso = 'Senha alterada com sucesso!'
+                finally: conexao.close()
+        return render_template('alterar_senha.html', **mod.contexto_base(), erro=erro, sucesso=sucesso)
+
     def salvar_integracao():
         if not mod.exigir_login() or not mod.exigir_perfil('administrador'): return redirect('/inicio')
         canal = request.form.get('canal','').strip().lower()
@@ -139,3 +167,4 @@ def instalar(mod):
     app.add_url_rule('/atendimento/mensagem/<int:conversa_id>', 'enviar_mensagem', enviar, methods=['POST'])
     app.add_url_rule('/configuracoes/integracao', 'salvar_integracao', salvar_integracao, methods=['POST'])
     app.add_url_rule('/webhook/meta', 'webhook_meta', webhook_meta, methods=['GET','POST'])
+    app.add_url_rule('/alterar-senha', 'alterar_senha', alterar_senha, methods=['GET','POST'])
