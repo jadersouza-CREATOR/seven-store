@@ -262,6 +262,24 @@ def alterar_perfil():
         banco.commit()
     finally:banco.close()
     return redirect("/configuracoes")
+@app.route("/configuracoes/excluir-usuario/<int:usuario_id>",methods=["POST"])
+def excluir_usuario(usuario_id):
+    if not exigir_login() or not exigir_perfil("administrador"):return redirect("/inicio")
+    if usuario_id==usuario_id_atual():return redirect("/configuracoes?senha_erro=Você não pode excluir sua própria conta.")
+    banco=conectar_banco()
+    try:
+        with banco.cursor() as cursor:
+            cursor.execute("SELECT id,usuario,perfil FROM usuarios WHERE id=%s",(usuario_id,));alvo=cursor.fetchone()
+            if not alvo:
+                banco.rollback();return redirect("/configuracoes?senha_erro=Usuário não encontrado.")
+            if alvo["perfil"]=="administrador":
+                cursor.execute("SELECT COUNT(*) AS total FROM usuarios WHERE perfil='administrador'")
+                if int(cursor.fetchone()["total"] or 0)<=1:
+                    banco.rollback();return redirect("/configuracoes?senha_erro=Não é possível excluir o último administrador.")
+            cursor.execute("DELETE FROM usuarios WHERE id=%s",(usuario_id,))
+        banco.commit()
+    finally:banco.close()
+    return redirect("/configuracoes?senha_ok=Usuário excluído com sucesso.")
 @app.route("/atendimento")
 def atendimento():
     if not exigir_login():return redirect("/")
