@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seven Store - Atendimento</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+.atendimento-grid{display:grid;grid-template-columns:320px 1fr;gap:20px;height:calc(100vh - 150px)}
+.lista-atendimentos,.chat-box{background:#fff;border-radius:16px;padding:18px;box-shadow:0 8px 25px rgba(0,0,0,.08)}
+.lista-atendimentos h3{margin-top:0}.conversa{display:block;padding:14px;border-radius:12px;margin-bottom:8px;background:#f5f6f8;text-decoration:none;color:#222}.conversa.ativa{background:#e8f0ff}.conversa strong{display:block}.conversa small{color:#777}
+.chat-box{display:flex;flex-direction:column}.chat-header{border-bottom:1px solid #eee;padding-bottom:12px}.mensagens{flex:1;overflow:auto;padding:18px 0}.msg{max-width:70%;padding:10px 14px;border-radius:14px;margin:8px 0}.msg.recebida{background:#f0f0f0}.msg.enviada{background:#dcecff;margin-left:auto}.chat-form{display:flex;gap:10px}.chat-form input{flex:1;padding:13px;border:1px solid #ddd;border-radius:10px}.status{font-size:12px}.online{color:#159447}.config-card{background:#fff;padding:20px;border-radius:16px;box-shadow:0 8px 25px rgba(0,0,0,.08);margin-top:20px}.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.config-item{border:1px solid #eee;padding:18px;border-radius:14px}.config-item h4{margin-top:0}@media(max-width:800px){.atendimento-grid,.config-grid{grid-template-columns:1fr}.atendimento-grid{height:auto}}
+</style>
+</head>
+<body>
+<div class="dashboard">
+<aside class="menu">
+<div class="logo-menu"><h1>SEVEN</h1><span>STORE</span></div>
+<nav>
+<a href="{{ url_for('inicio') }}">🏠 Início</a><a href="{{ url_for('produtos') }}">📦 Produtos</a><a href="{{ url_for('clientes') }}">👥 Clientes</a><a href="{{ url_for('vendas') }}">🛒 Vendas</a><a href="{{ url_for('estoque') }}">📋 Estoque</a><a href="{{ url_for('relatorios') }}">📊 Relatórios</a><a href="{{ url_for('caixa') }}">💰 Caixa</a><a class="ativo" href="{{ url_for('atendimento') }}">💬 Atendimento</a><a href="{{ url_for('configuracoes') }}">⚙️ Configurações</a>
+</nav><div class="menu-final"><a href="{{ url_for('sair') }}">🚪 Sair</a></div>
+</aside>
+<main class="conteudo">
+<header class="cabecalho"><div><h2>Atendimento</h2><p>Centralize as conversas dos seus clientes.</p></div><div class="usuario-dashboard">👤 {{ usuario }}</div></header>
+<div class="atendimento-grid">
+<section class="lista-atendimentos"><h3>Conversas</h3>{% for conversa in conversas %}<a class="conversa {% if conversa.id == conversa_selecionada %}ativa{% endif %}" href="{{ url_for('atendimento', conversa=conversa.id) }}"><strong>{{ conversa.nome or conversa.identificador }}</strong><small>{{ conversa.canal|upper }} · {{ conversa.status }}</small><p>{{ conversa.ultima_mensagem or 'Sem mensagens' }}</p></a>{% else %}<p>Nenhuma conversa recebida ainda.</p>{% endfor %}</section>
+<section class="chat-box">{% if conversa_atual %}<div class="chat-header"><h3>{{ conversa_atual.nome or conversa_atual.identificador }}</h3><span class="status online">● {{ conversa_atual.canal|upper }}</span></div><div class="mensagens">{% for mensagem in mensagens %}<div class="msg {{ 'enviada' if mensagem.direcao == 'enviada' else 'recebida' }}"><strong>{{ mensagem.direcao|capitalize }}</strong><br>{{ mensagem.texto }}<br><small>{{ mensagem.criada_em }}</small></div>{% endfor %}</div><form class="chat-form" method="post" action="{{ url_for('enviar_mensagem', conversa_id=conversa_atual.id) }}"><input name="mensagem" placeholder="Digite uma mensagem..." required><button class="botao" type="submit">Enviar</button></form>{% else %}<div class="vazio"><div class="vazio-icone">💬</div><h3>Selecione uma conversa</h3><p>As mensagens do WhatsApp e Instagram aparecerão aqui quando os canais estiverem conectados.</p></div>{% endif %}</section>
+</div>
+<section class="config-card"><h3>Integrações</h3><div class="config-grid"><div class="config-item"><h4>📱 WhatsApp</h4><p>{{ whatsapp_status }}</p><a class="botao" href="{{ url_for('configuracoes') }}">Configurar WhatsApp</a></div><div class="config-item"><h4>📸 Instagram</h4><p>{{ instagram_status }}</p><a class="botao" href="{{ url_for('configuracoes') }}">Configurar Instagram</a></div></div></section>
+<footer>Seven Store — Central de Atendimento</footer>
+</main></div></body></html>
