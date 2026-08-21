@@ -229,6 +229,28 @@ def configuracoes():
             cursor.execute("SELECT id,usuario,perfil FROM usuarios ORDER BY id");usuarios=cursor.fetchall()
     finally:banco.close()
     return render_template("configuracoes.html",**contexto_base(),loja=loja,usuarios=usuarios,mensagem=mensagem)
+@app.route("/configuracoes/alterar-senha",methods=["POST"])
+def alterar_senha():
+    if not exigir_login():return redirect("/")
+    atual=request.form.get("senha_atual","")
+    nova=request.form.get("nova_senha","")
+    confirmacao=request.form.get("confirmar_senha","")
+    if not atual or not nova or not confirmacao:
+        return redirect("/configuracoes?senha_erro=Preencha todos os campos da senha.")
+    if len(nova)<4:
+        return redirect("/configuracoes?senha_erro=A nova senha deve ter pelo menos 4 caracteres.")
+    if nova!=confirmacao:
+        return redirect("/configuracoes?senha_erro=As novas senhas não conferem.")
+    banco=conectar_banco()
+    try:
+        with banco.cursor() as cursor:
+            cursor.execute("SELECT senha FROM usuarios WHERE id=%s",(usuario_id_atual(),));usuario=cursor.fetchone()
+            if not usuario or usuario["senha"]!=atual:
+                banco.rollback();return redirect("/configuracoes?senha_erro=A senha atual está incorreta.")
+            cursor.execute("UPDATE usuarios SET senha=%s WHERE id=%s",(nova,usuario_id_atual()))
+        banco.commit()
+    finally:banco.close()
+    return redirect("/configuracoes?senha_ok=Senha alterada com sucesso.")
 @app.route("/configuracoes/perfil",methods=["POST"])
 def alterar_perfil():
     if not exigir_login() or not exigir_perfil("administrador"):return redirect("/inicio")
