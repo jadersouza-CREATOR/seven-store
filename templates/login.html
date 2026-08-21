@@ -7,20 +7,13 @@
 <body class="pagina-login">
 <div class="login-container">
   <div class="logo">
-    <img src="{{ url_for('static', filename='seven-store-logo.svg') }}" alt="Seven Store Boutique">
-    <h1>SEVEN STORE</h1>
-    <p>Acesse o sistema de gestão da sua loja</p>
-    <span>Versão 0.6 · Boutique</span>
+    <img src="{{ url_for('static', filename='seven-store-logo.jpg') }}" alt="Seven Store Boutique">
+    <h1>SEVEN STORE</h1><p>Acesse o sistema de gestão da sua loja</p><span>Versão 0.6 · Boutique</span>
   </div>
   <form action="{{ url_for('fazer_login') }}" method="POST">
-    <label for="usuario">Usuário</label>
-    <input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário" autocomplete="username" required>
-    <label for="senha">Senha</label>
-    <input type="password" id="senha" name="senha" placeholder="Digite sua senha" autocomplete="current-password" required>
-    {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
-    <button type="submit">ENTRAR NO SISTEMA</button>
+    <label for="usuario">Usuário</label><input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário" autocomplete="username" required>
+    <label for="senha">Senha</label><input type="password" id="senha" name="senha" placeholder="Digite sua senha" autocomplete="current-password" required>
+    {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}<button type="submit">ENTRAR NO SISTEMA</button>
   </form>
   <div class="cadastro-link"><a href="{{ url_for('cadastro') }}">Criar uma nova conta</a></div>
-</div>
-</body>
-</html>
+</div></body></html>
